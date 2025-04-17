@@ -10,7 +10,7 @@ Description:
 
 class Pattern(list):
     """
-    Pattern is escentially a list of items that can be serialized into a string (a file is basically a serialized string)
+    Pattern is a list of items that is serialized into a string
     """
 
     def __init__(self, *args):
@@ -89,6 +89,22 @@ class Pattern(list):
 
     def __iadd__(self, other):
         return self.__add__(other)
+
+    def __sub__(self, other):
+        pat = self._copy(Pattern())
+        if type(other) is Pattern:
+            for item in other:
+                pat.remove(item)
+        else:
+            pat.remove(other)
+        return pat
+
+    def __isub__(self, other):
+        return self.__sub__(other)
+
+    def __contains__(self, key):
+        if self.__getitem__(key): return True
+        return False
     
     def __str__(self):
         """
@@ -149,7 +165,12 @@ if __name__ == "__main__":
     groceries["groceries"] += ", 5 apples"
     groceries["groceries"].append(", 2 pineapples")
 
-    print(groceries)
+    print("3 bananas" in groceries) # True
+    print("bananas" in groceries) # False
+    print("5 bananas" in groceries) # False
+    print("groceries" in groceries) # True
+    print("get " in groceries) # True
+    print("get" in groceries) # False
 
     """
     get 3 bananas, 5 apples, 2 pineapples
@@ -225,6 +246,8 @@ QWidget {
     css[P("QWidget", "font-size")] = "14px"
     css[P("QWidget", "background-color")] = "#000000"
     css[P("QWidget", "color")] = "#ffffff"
+    css[P("QWidget", "color")] += "#55555"
+    css[P("QWidget", "color")] -= "#55555"
 
     print(repr(css))
 
