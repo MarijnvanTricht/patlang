@@ -2,7 +2,7 @@
 
 Pattern language.
 
-It contains the class `Pattern` which is derived from the class `list` which can contain Variables which are derived from the class `Pattern` (also checkout toklang, the string based counterpart)
+Contains the class `Pattern` which is derived from the class `list` which can contain Variables which are derived from the class `Pattern` (also checkout toklang, the string based counterpart)
 
 ## example usage
 
@@ -35,6 +35,50 @@ get 3 bananas, 5 apples, 2 pineapples
 ```
 
 Calling the string representation will replace the variable with its corresponding value.
+
+#### Manipulation
+
+Checking on content can be done with the keyword `in`
+
+```python
+print("3 bananas" in groceries) # True
+print("bananas" in groceries) # False
+print("5 apples" in groceries) # False
+print("groceries" in groceries) # True
+print("get " in groceries) # True
+print("get" in groceries) # False
+```
+
+Note that `5 apples` is not recognized because the pattern entered also includes a comma and a whitespace. This can be fixed with the following code
+
+```python
+groceries["groceries"] -= ", 5 apples"
+groceries["groceries"] += Pattern(", ","5 apples")
+```
+
+Where the pattern output will look like:
+
+```
+'get '('groceries':'3 bananas'', 2 pineapples'', ''5 apples')
+```
+
+Or just
+
+```python
+groceries[", 5 apples"] = Pattern(", ","5 apples")
+```
+
+Where the pattern output will look like:
+
+```
+'get '('groceries':'3 bananas'', ''5 apples'', 2 pineapples')
+```
+
+Atleast now
+
+```python
+print("5 apples" in groceries) # True
+```
 
 ### C++ Class template
 
@@ -82,7 +126,7 @@ public:
 };
 ```
 
-Note: that className is assigned after assigning PublicFunctions where ClassName variable is used (If a variable is added later this value is replaced when the variable is assigned a new value.)
+Note: that className is assigned after assigning PublicFunctions where the ClassName variable is used (If a variable is added later this value is replaced when the variable is assigned a new value.) *May need to be updated to update variables when added to a pattern if of the same name*
 
 ### CSS template
 
@@ -121,7 +165,7 @@ And changed
 css[P("QWidget", "color")] = "#252525"
 ```
 
-Where `print(str(css))` will now output
+Where `print(css)` will now output
 
 ```css
 /* General App Style */

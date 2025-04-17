@@ -16,7 +16,7 @@ class Pattern(list):
     def __init__(self, *args):
         super().__init__(args)
         
-    def __getitem__(self, key, flattend = True):
+    def __getitem__(self, key, flattend = True, strict = False):
         """
         if not slice,
         will return a nested (if flattend) variable whose name is matching the key
@@ -39,18 +39,19 @@ class Pattern(list):
                     n = item[key]
                     if n: return n;
 
-        """
-        Second wind - expand search for items
-        """
-        for item in self:
-            if item == key:
-                return item
-            else:
-                if type(item) == Pattern and flattend:
-                    n = item[key]
-                    if n: return n;
+        if not strict:
+            """
+            Second wind - expand search for items
+            """
+            for item in self:
+                if item == key:
+                    return item
+                else:
+                    if type(item) == Pattern and flattend:
+                        n = item[key]
+                        if n: return n;
 
-    def __setitem__(self, key, value, flattend = True):
+    def __setitem__(self, key, value, flattend = True, strict = False):
         """
         will set a nested (if flattend) variable whose name is matching the key
         """
@@ -69,15 +70,16 @@ class Pattern(list):
                 elif flattend:
                     item[key] = value
 
-        """
-        Second wind - expand search for items
-        """
-        for index, item in enumerate(self):
-            if item == key:
-                super().__setitem__(index, value)
-            else:
-                if type(item) == Pattern and flattend:
-                    item[key] = value
+        if not strict:
+            """
+            Second wind - expand search for items
+            """
+            for index, item in enumerate(self):
+                if item == key:
+                    super().__setitem__(index, value)
+                else:
+                    if type(item) == Pattern and flattend:
+                        item[key] = value
 
     def __add__(self, other):
         pat = self._copy(Pattern())
@@ -165,13 +167,6 @@ if __name__ == "__main__":
     groceries["groceries"] += ", 5 apples"
     groceries["groceries"].append(", 2 pineapples")
 
-    print("3 bananas" in groceries) # True
-    print("bananas" in groceries) # False
-    print("5 bananas" in groceries) # False
-    print("groceries" in groceries) # True
-    print("get " in groceries) # True
-    print("get" in groceries) # False
-
     """
     get 3 bananas, 5 apples, 2 pineapples
     """
@@ -181,6 +176,20 @@ if __name__ == "__main__":
     """
     'get '('groceries':'3 bananas'', 5 apples'', 2 pineapples')
     """
+
+    print("3 bananas" in groceries) # True
+    print("bananas" in groceries) # False
+    print("5 apples" in groceries) # False
+    print("groceries" in groceries) # True
+    print("get " in groceries) # True
+    print("get" in groceries) # False
+
+    #groceries["groceries"] -= ", 5 apples"
+    #groceries["groceries"] += Pattern(", ","5 apples")
+    groceries[", 5 apples"] = Pattern(", ","5 apples")
+
+    print(repr(groceries))
+    print("5 apples" in groceries) # True
     
     cpp_class = Pattern("class ", Variable("ClassName"),""" {
 public:
