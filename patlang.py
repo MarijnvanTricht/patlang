@@ -14,12 +14,14 @@ class Pattern(list):
     """
 
     def __init__(self, *args):
+        """
+        Init a Pattern (list) with *args
+        """ 
         super().__init__(args)
         
     def __getitem__(self, key, flattend = True):
         """
-        if not slice,
-        will return a nested (if flattend) variable whose name is matching the key
+        will return a nested (if flattend) variable (if key is variable) or item whose name is matching the key
         """            
         if isinstance(key, slice):
             items = super().__getitem__(key)
@@ -28,10 +30,10 @@ class Pattern(list):
                 newPat.append(item)
             return newPat
 
-        """
-        Search for variables in the pattern
-        """
         if isinstance(key, Variable):
+            """
+            search for variable items
+            """
             for item in self:
                 if type(item) is Variable:
                     if item.name == key.name:
@@ -42,7 +44,7 @@ class Pattern(list):
 
         else:
             """
-            Second wind - expand search for items
+            search for static items
             """
             for item in self:
                 if item == key:
@@ -54,13 +56,13 @@ class Pattern(list):
 
     def __setitem__(self, key, value, flattend = True):
         """
-        will set a nested (if flattend) variable whose name is matching the key
+        will set a nested (if flattend) variable (if key is variable) or item whose name is matching the key
         """
-        
-        """
-        Search for variables in the pattern
-        """
+
         if isinstance(key, Variable):
+            """
+            search for variable items
+            """
             for index, item in enumerate(self):
                 if type(item) is Variable:
                     if item.name == key.name:
@@ -74,7 +76,7 @@ class Pattern(list):
 
         else:
             """
-            Second wind - expand search for items
+            search for static items
             """
             for index, item in enumerate(self):
                 if item == key:
@@ -92,6 +94,9 @@ class Pattern(list):
         return pat
 
     def __iadd__(self, other):
+        """
+        return __add__
+        """
         return self.__add__(other)
 
     def __sub__(self, other):
@@ -104,9 +109,15 @@ class Pattern(list):
         return pat
 
     def __isub__(self, other):
+        """
+        return __sub__
+        """
         return self.__sub__(other)
 
     def __contains__(self, key):
+        """
+        if __getitem__ returns a valid item, this returns True
+        """
         if self.__getitem__(key): return True
         return False
     
@@ -124,7 +135,7 @@ class Pattern(list):
 
     def _copy(self, newPattern):
         """
-        private copy, cause self_type cannot be as default argument
+        private copy, because self_type cannot be given as default argument
         """
         for item in self:
             if hasattr(item, "copy"):
@@ -134,6 +145,9 @@ class Pattern(list):
         return newPattern
 
     def copy(self):
+        """
+        returns a copy of self as Pattern(self)
+        """ 
         return self._copy(Pattern())
     
 class Variable(Pattern):
@@ -141,8 +155,12 @@ class Variable(Pattern):
     a Variable is a Pattern with a name
     """
     
-    def __init__(self, name = ""):
-        super().__init__()
+    def __init__(self, name = "", *args):
+        """
+        Init a variable with a name
+        Rest *args will init the pattern
+        """
+        super().__init__(*args)
         self.name = name
 
     def __repr__(self):
@@ -152,6 +170,9 @@ class Variable(Pattern):
         return "(" + repr(self.name) + ":" + "".join(map(repr, self)) + ")"
     
     def copy(self):
+        """
+        returns a copy of self as Variable()
+        """ 
         newVariable = Variable(self.name)
         return self._copy(newVariable)
 
