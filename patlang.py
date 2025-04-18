@@ -48,7 +48,7 @@ class Pattern(list):
                 if item == key:
                     return item
                 else:
-                    if isinstance(item, Variable) and flattend:
+                    if isinstance(item, Pattern) and flattend:
                         n = item[key]
                         if n: return n;
 
@@ -80,7 +80,7 @@ class Pattern(list):
                 if item == key:
                     super().__setitem__(index, value)
                 else:
-                    if isinstance(item, Variable) and flattend:
+                    if isinstance(item, Pattern) and flattend:
                         item[key] = value
 
     def __add__(self, other):
