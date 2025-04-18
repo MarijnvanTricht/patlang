@@ -15,9 +15,9 @@ groceries = Pattern("get ",Variable("groceries"))
 Assign values
 
 ```python
-groceries["groceries"] = "3 bananas"
-groceries["groceries"] += ", 5 apples"
-groceries["groceries"].append(", 2 pineapples")
+groceries[Variable("groceries")] = "3 bananas"
+groceries[Variable("groceries")] += ", 5 apples"
+groceries[Variable("groceries")].append(", 2 pineapples")
 ```
 
 Now this
@@ -44,7 +44,8 @@ Checking on content can be done with the keyword `in`
 print("3 bananas" in groceries) # True
 print("bananas" in groceries) # False
 print("5 apples" in groceries) # False
-print("groceries" in groceries) # True
+print("groceries" in groceries) # False
+print(Variable("groceries") in groceries) # True
 print("get " in groceries) # True
 print("get" in groceries) # False
 ```
@@ -52,8 +53,8 @@ print("get" in groceries) # False
 Note that `5 apples` is not recognized because the pattern entered also includes a comma and a whitespace. This can be fixed with the following code
 
 ```python
-groceries["groceries"] -= ", 5 apples"
-groceries["groceries"] += Pattern(", ","5 apples")
+groceries[Variable("groceries")] -= ", 5 apples"
+groceries[Variable("groceries")] += Pattern(", ","5 apples")
 ```
 
 Where the pattern output will look like:
@@ -99,12 +100,12 @@ public:
 Adding and setting values
 
 ```python
-cpp_class["Constructor"] = 'cout << "Default constructor called!" << endl;'
-cpp_class["PublicFunctions"] = Pattern("""// A simple member function
+cpp_class[Variable("Constructor")] = 'cout << "Default constructor called!" << endl;'
+cpp_class[Variable("PublicFunctions")] = Pattern("""// A simple member function
 void greet() {
     cout << "Hello from """, Variable("ClassName"), """!" << endl;
 }""")
-cpp_class["ClassName"] = "SomeNewClass"
+cpp_class[Variable("ClassName")] = "SomeNewClass"
 
 print(cpp_class)
 ```
@@ -154,15 +155,15 @@ QWidget {
 Values (defaults) can be set
 
 ```python
-css[P("QWidget", "font-size")] = "14px"
-css[P("QWidget", "background-color")] = "#000000"
-css[P("QWidget", "color")] = "#ffffff"
+css[V(P("QWidget", "font-size"))] = "14px"
+css[V(P("QWidget", "background-color"))] = "#000000"
+css[V(P("QWidget", "color"))] = "#ffffff"
 ```
 
 And changed
 
 ```python
-css[P("QWidget", "color")] = "#252525"
+css[V(P("QWidget", "color"))] = "#252525"
 ```
 
 Where `print(css)` will now output
@@ -184,9 +185,9 @@ Recursion can only happen when values are assigned. Each time they are assigned 
 For example for
 
 ```python
-a = Pattern(Variable("hello"))
-a["hello"] = Pattern("hallo hello") + Variable("hallo")
-a["hallo"] = Pattern("hello hallo") + Variable("hello")
+a = P(V("hello"))
+a[V("hello")] = P("hallo hello ") + V("hallo")
+a[V("hallo")] = P("hello hallo ") + V("hello")
 
 print(repr(a))
 print(a)
@@ -195,16 +196,16 @@ print(a)
 Will return
 
 ```
-('hello':'hallo hello'('hallo':'hello hallo'('hello':)))
-hallo hellohello hallo
+('hello':'hallo hello '('hallo':'hello hallo '('hello':)))
+hallo hello hello hallo 
 ```
 
-But `a["hello"] = a["hello"]` will result in a recursion error.
+But `a["hello"] = a["hello"]` will result in a recursion error. You can use `a["hello"] = str(a["hello"])`
 
-To update variables they can be added to
+To update variables they can also be added to
 
 ```python
-a["hello"] += a["hallo"]
+a[V("hello")] += a[V("hallo")]
 
 print(repr(a))
 print(a)
@@ -213,8 +214,8 @@ print(a)
 Which will output
 
 ```
-('hello':'hallo hello'('hallo':'hello hallo'('hello':))('hallo':'hello hallo'('hello':)))
-hallo hellohello hallohello hallo
+('hello':'hallo hello '('hallo':'hello hallo '('hello':))('hallo':'hello hallo '('hello':)))
+hallo hello hello hallo hello hallo 
 ```
 
 ## Build

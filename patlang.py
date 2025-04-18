@@ -16,7 +16,7 @@ class Pattern(list):
     def __init__(self, *args):
         super().__init__(args)
         
-    def __getitem__(self, key, flattend = True, strict = False):
+    def __getitem__(self, key, flattend = True):
         """
         if not slice,
         will return a nested (if flattend) variable whose name is matching the key
@@ -31,15 +31,16 @@ class Pattern(list):
         """
         Search for variables in the pattern
         """
-        for item in self:
-            if type(item) is Variable:
-                if item.name == key:
-                    return item
-                elif flattend:
-                    n = item[key]
-                    if n: return n;
+        if isinstance(key, Variable):
+            for item in self:
+                if type(item) is Variable:
+                    if item.name == key.name:
+                        return item
+                    elif flattend:
+                        n = item[key]
+                        if n: return n;
 
-        if not strict:
+        else:
             """
             Second wind - expand search for items
             """
@@ -47,11 +48,11 @@ class Pattern(list):
                 if item == key:
                     return item
                 else:
-                    if type(item) == Pattern and flattend:
+                    if isinstance(item, Variable) and flattend:
                         n = item[key]
                         if n: return n;
 
-    def __setitem__(self, key, value, flattend = True, strict = False):
+    def __setitem__(self, key, value, flattend = True):
         """
         will set a nested (if flattend) variable whose name is matching the key
         """
@@ -59,18 +60,19 @@ class Pattern(list):
         """
         Search for variables in the pattern
         """
-        for index, item in enumerate(self):
-            if type(item) is Variable:
-                if item.name == key:
-                    item.clear()
-                    if type(value) is Pattern:
-                        item.extend(value)
-                    else:
-                        item.append(value)
-                elif flattend:
-                    item[key] = value
+        if isinstance(key, Variable):
+            for index, item in enumerate(self):
+                if type(item) is Variable:
+                    if item.name == key.name:
+                        item.clear()
+                        if type(value) is Pattern:
+                            item.extend(value)
+                        else:
+                            item.append(value)
+                    elif flattend:
+                        item[key] = value
 
-        if not strict:
+        else:
             """
             Second wind - expand search for items
             """
@@ -78,7 +80,7 @@ class Pattern(list):
                 if item == key:
                     super().__setitem__(index, value)
                 else:
-                    if type(item) == Pattern and flattend:
+                    if isinstance(item, Variable) and flattend:
                         item[key] = value
 
     def __add__(self, other):
@@ -163,9 +165,11 @@ if __name__ == "__main__":
     'get '('groceries':)
     """
 
-    groceries["groceries"] = "3 bananas"
-    groceries["groceries"] += ", 5 apples"
-    groceries["groceries"].append(", 2 pineapples")
+    groceries[Variable("groceries")] = "3 bananas"
+    groceries[Variable("groceries")] += ", 5 apples"
+    groceries[Variable("groceries")].append(", 2 pineapples")
+
+    print(groceries)
 
     """
     get 3 bananas, 5 apples, 2 pineapples
@@ -180,7 +184,8 @@ if __name__ == "__main__":
     print("3 bananas" in groceries) # True
     print("bananas" in groceries) # False
     print("5 apples" in groceries) # False
-    print("groceries" in groceries) # True
+    print("groceries" in groceries) # False
+    print(Variable("groceries") in groceries) # True
     print("get " in groceries) # True
     print("get" in groceries) # False
 
@@ -201,13 +206,13 @@ public:
     """, Variable("PublicFunctions"), """
 };""")
 
-    cpp_class["Constructor"] = 'cout << "Default constructor called!" << endl;'
-    cpp_class["PublicFunctions"] = Pattern("""// A simple member function
+    cpp_class[Variable("Constructor")] = 'cout << "Default constructor called!" << endl;'
+    cpp_class[Variable("PublicFunctions")] = Pattern("""// A simple member function
     void greet() {
         cout << "Hello from """, Variable("ClassName"), """!" << endl;
     }""")
 
-    cpp_class["ClassName"] = "SomeNewClass"
+    cpp_class[Variable("ClassName")] = "SomeNewClass"
     
     print(cpp_class)
 
@@ -252,11 +257,11 @@ QWidget {
 """)
 
     # Set defaults
-    css[P("QWidget", "font-size")] = "14px"
-    css[P("QWidget", "background-color")] = "#000000"
-    css[P("QWidget", "color")] = "#ffffff"
-    css[P("QWidget", "color")] += "#55555"
-    css[P("QWidget", "color")] -= "#55555"
+    css[V(P("QWidget", "font-size"))] = "14px"
+    css[V(P("QWidget", "background-color"))] = "#000000"
+    css[V(P("QWidget", "color"))] = "#ffffff"
+    css[V(P("QWidget", "color"))] += "#55555"
+    css[V(P("QWidget", "color"))] -= "#55555"
 
     print(repr(css))
 
@@ -270,7 +275,7 @@ QWidget {
     print("")
 
     # Change color
-    css[P("QWidget", "color")] = "#252525"
+    css[V(P("QWidget", "color"))] = "#252525"
 
     print(str(css))
 
@@ -284,24 +289,24 @@ QWidget {
     }
     """
 
-    a = Pattern(Variable("hello"))
-    a["hello"] = Pattern("hallo hello") + Variable("hallo")
-    a["hallo"] = Pattern("hello hallo") + Variable("hello")
+    a = P(V("hello"))
+    a[V("hello")] = P("hallo hello ") + V("hallo")
+    a[V("hallo")] = P("hello hallo ") + V("hello")
 
     print(repr(a))
     print(a)
     
     """
-    ('hello':'hallo hello'('hallo':'hello hallo'('hello':)))
-    hallo hellohello hallo
+    ('hello':'hallo hello '('hallo':'hello hallo '('hello':)))
+    hallo hello hello hallo 
     """
 
-    a["hello"] += a["hallo"]
+    a[V("hello")] += a[V("hallo")]
 
     print(repr(a))
     print(a)
 
     """
-    ('hello':'hallo hello'('hallo':'hello hallo'('hello':))('hallo':'hello hallo'('hello':)))
-    hallo hellohello hallohello hallo
+    ('hello':'hallo hello '('hallo':'hello hallo '('hello':))('hallo':'hello hallo '('hello':)))
+    hallo hello hello hallo hello hallo 
     """
