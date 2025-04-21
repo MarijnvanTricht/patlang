@@ -4,13 +4,15 @@ patlang.py
 Author: Marijn van Tricht
 Date: 2025-04-17
 Description:
-    Contains Pattern class which is a list which can have static items and dynamic (variable) items
-    Variable items are created with the Variable class (which is a Pattern with a name)
+    Pattern language contains:
+    List (& List.Variable)
+    Tree (& Tree.Variable)
+    String (not using variables, but token based)
 """
 
-class Pattern(list):
+class List(list):
     """
-    Pattern is a list of items that is serialized into a string
+    a patlang List
     """
 
     def __init__(self, *args):
@@ -25,17 +27,17 @@ class Pattern(list):
         """            
         if isinstance(key, slice):
             items = super().__getitem__(key)
-            newPat = Pattern()
+            newPat = List()
             for item in items:
                 newPat.append(item)
             return newPat
 
-        if isinstance(key, Variable):
+        if isinstance(key, List.Variable):
             """
             search for variable items
             """
             for item in self:
-                if type(item) is Variable:
+                if type(item) is List.Variable:
                     if item.name == key.name:
                         return item
                     elif flattend:
@@ -50,7 +52,7 @@ class Pattern(list):
                 if item == key:
                     return item
                 else:
-                    if isinstance(item, Pattern) and flattend:
+                    if isinstance(item, List) and flattend:
                         n = item[key]
                         if n: return n;
 
@@ -59,15 +61,15 @@ class Pattern(list):
         will set a nested (if flattend) variable (if key is variable) or item whose name is matching the key
         """
 
-        if isinstance(key, Variable):
+        if isinstance(key, List.Variable):
             """
             search for variable items
             """
             for index, item in enumerate(self):
-                if type(item) is Variable:
+                if type(item) is List.Variable:
                     if item.name == key.name:
                         item.clear()
-                        if type(value) is Pattern:
+                        if type(value) is List:
                             item.extend(value)
                         else:
                             item.append(value)
@@ -82,12 +84,12 @@ class Pattern(list):
                 if item == key:
                     super().__setitem__(index, value)
                 else:
-                    if isinstance(item, Pattern) and flattend:
+                    if isinstance(item, List) and flattend:
                         item[key] = value
 
     def __add__(self, other):
-        pat = self._copy(Pattern())
-        if type(other) is Pattern:
+        pat = self._copy(List())
+        if type(other) is List:
             pat.extend(other)
         else:
             pat.append(other)
@@ -100,8 +102,8 @@ class Pattern(list):
         return self.__add__(other)
 
     def __sub__(self, other):
-        pat = self._copy(Pattern())
-        if type(other) is Pattern:
+        pat = self._copy(List())
+        if type(other) is List:
             for item in other:
                 pat.remove(item)
         else:
@@ -150,7 +152,7 @@ class Pattern(list):
         """ 
         return self._copy(Pattern())
     
-class Variable(Pattern):
+class VariableList(List):
     """
     a Variable is a Pattern with a name
     """
@@ -173,12 +175,25 @@ class Variable(Pattern):
         """
         returns a copy of self as Variable()
         """ 
-        newVariable = Variable(self.name)
+        newVariable = List.Variable(self.name)
         return self._copy(newVariable)
+
+# propper alias
+List.Variable = VariableList
 
 if __name__ == "__main__":
 
-    groceries = Pattern("get ",Variable("groceries"))
+    # Test & usage example
+
+    # String
+
+    
+
+    
+
+    # List
+
+    groceries = List("get ",List.Variable("groceries"))
 
     print(repr(groceries))
 
@@ -186,9 +201,9 @@ if __name__ == "__main__":
     'get '('groceries':)
     """
 
-    groceries[Variable("groceries")] = "3 bananas"
-    groceries[Variable("groceries")] += ", 5 apples"
-    groceries[Variable("groceries")].append(", 2 pineapples")
+    groceries[List.Variable("groceries")] = "3 bananas"
+    groceries[List.Variable("groceries")] += ", 5 apples"
+    groceries[List.Variable("groceries")].append(", 2 pineapples")
 
     print(groceries)
 
@@ -206,34 +221,34 @@ if __name__ == "__main__":
     print("bananas" in groceries) # False
     print("5 apples" in groceries) # False
     print("groceries" in groceries) # False
-    print(Variable("groceries") in groceries) # True
+    print(List.Variable("groceries") in groceries) # True
     print("get " in groceries) # True
     print("get" in groceries) # False
 
     #groceries["groceries"] -= ", 5 apples"
-    #groceries["groceries"] += Pattern(", ","5 apples")
-    groceries[", 5 apples"] = Pattern(", ","5 apples")
+    #groceries["groceries"] += List(", ","5 apples")
+    groceries[", 5 apples"] = List(", ","5 apples")
 
     print(repr(groceries))
     print("5 apples" in groceries) # True
     
-    cpp_class = Pattern("class ", Variable("ClassName"),""" {
+    cpp_class = List("class ", List.Variable("ClassName"),""" {
 public:
     // Default constructor
-    """, Variable("ClassName"), """() {
-        """, Variable("Constructor"), """
+    """, List.Variable("ClassName"), """() {
+        """, List.Variable("Constructor"), """
     }
     
-    """, Variable("PublicFunctions"), """
+    """, List.Variable("PublicFunctions"), """
 };""")
 
-    cpp_class[Variable("Constructor")] = 'cout << "Default constructor called!" << endl;'
-    cpp_class[Variable("PublicFunctions")] = Pattern("""// A simple member function
+    cpp_class[List.Variable("Constructor")] = 'cout << "Default constructor called!" << endl;'
+    cpp_class[List.Variable("PublicFunctions")] = List("""// A simple member function
     void greet() {
-        cout << "Hello from """, Variable("ClassName"), """!" << endl;
+        cout << "Hello from """, List.Variable("ClassName"), """!" << endl;
     }""")
 
-    cpp_class[Variable("ClassName")] = "SomeNewClass"
+    cpp_class[List.Variable("ClassName")] = "SomeNewClass"
     
     print(cpp_class)
 
@@ -263,8 +278,8 @@ public:
     """
 
     # short alias
-    P = Pattern
-    V = Variable
+    P = List # P for pattern
+    V = List.Variable
 
     # Create css pattern
     css = P("""
@@ -331,3 +346,6 @@ QWidget {
     ('hello':'hallo hello '('hallo':'hello hallo '('hello':))('hallo':'hello hallo '('hello':)))
     hallo hello hello hallo hello hallo 
     """
+
+    # Tree
+    
