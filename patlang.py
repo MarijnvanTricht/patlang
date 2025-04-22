@@ -5,11 +5,127 @@ Author: Marijn van Tricht
 Date: 2025-04-17
 Description:
     Pattern language contains:
+    String
     List (& List.Variable)
     Tree (& Tree.Variable)
-    String (not using variables, but token based)
 """
 
+class String(str):
+    """
+    a patlang String
+    """
+    
+    def __new__(cls, value = ""):
+        """
+        new Pattern (String) with value, because string is immutable
+        """ 
+        pat = super().__new__(cls, value)
+        pat.variables = dict()
+        return pat
+
+    def __getitem__(self, key):
+        return self.variables[key]
+    
+    def __setitem__(self, key, value):
+        self.variables.update({key: value})    
+
+    def __add__(self, other):
+        pat = Pattern(super().__add__(other))
+        pat.variables = self.variables
+        if isinstance(other, String):
+            pat.variables.update(other.variables)
+        return pat
+
+    def __eq__(self, other, strict=True):
+        if not strict:
+            return str(self) == str(other)
+        if isinstance(other, String):   
+            return repr(self) == repr(other)
+        return False
+    
+    def __str__(self):
+        out = super().__str__()
+        variables = dict(self.variables)
+
+        for key in variables:
+            for otherKey in variables:
+                if key != otherKey:
+                    variables[otherKey] = variables[otherKey].replace(str(key), str(self.variables[key]))
+        
+        for key in variables:
+            out = out.replace(str(key), str(variables[key]))
+            
+        return out
+
+    def __sub__(self, other):
+        pass # TODO
+
+    def __contains__(self, key):
+        if isinstance(key, str):
+            if (key in str(self)):
+                return True
+            elif (key in self.variables):
+                return True
+        elif isinstance(key, String):
+            if (str(key) in str(self)):
+                return True
+            elif (key in self.variables):
+                return True
+        return False
+
+    def __repr__(self):
+        out = super().__repr__()
+        variables = dict(self.variables)
+
+        for key in variables:
+            for otherKey in variables:
+                if key != otherKey:
+                    variables[otherKey] = variables[otherKey].replace(str(key), str(self.variables[key]))
+        
+        for key in variables:
+            out = out.replace(str(key), repr(key) + ":" + repr(variables[key]))
+            
+        return out
+
+    def flush(self):
+        variables = dict(self.variables)
+        
+        for key in variables:
+            for otherKey in variables:
+                if key != otherKey:
+                    variables[otherKey] = variables[otherKey].replace(str(key), str(self.variables[key]))
+                    
+        self.variables = variables
+
+    # for compatiblity accross other patlang types
+    def setItem(self, key, value):
+        """
+        set static item
+        """ 
+        pass #TODO
+
+    # for compatiblity accross other patlang types
+    def getItem(self, key):
+        """
+        get static item
+        """  
+        if key in self:
+            return key
+
+    # for compatiblity accross other patlang types
+    def setVariable(self, key, value):
+        """
+        set static item
+        """ 
+        self[key] = value
+
+    # for compatiblity accross other patlang types
+    def getVariable(self, key):
+        """
+        get variable item
+        """  
+        return self[key]
+        
 class List(list):
     """
     a patlang List
@@ -33,28 +149,9 @@ class List(list):
             return newPat
 
         if isinstance(key, List.Variable):
-            """
-            search for variable items
-            """
-            for item in self:
-                if type(item) is List.Variable:
-                    if item.name == key.name:
-                        return item
-                    elif flattend:
-                        n = item[key]
-                        if n: return n;
-
+            return self.getVariable(key, flattend)
         else:
-            """
-            search for static items
-            """
-            for item in self:
-                if item == key:
-                    return item
-                else:
-                    if isinstance(item, List) and flattend:
-                        n = item[key]
-                        if n: return n;
+            return self.getItem(key, flattend)
 
     def __setitem__(self, key, value, flattend = True):
         """
@@ -62,30 +159,9 @@ class List(list):
         """
 
         if isinstance(key, List.Variable):
-            """
-            search for variable items
-            """
-            for index, item in enumerate(self):
-                if type(item) is List.Variable:
-                    if item.name == key.name:
-                        item.clear()
-                        if type(value) is List:
-                            item.extend(value)
-                        else:
-                            item.append(value)
-                    elif flattend:
-                        item[key] = value
-
+            self.setVariable(key, value, flattend)
         else:
-            """
-            search for static items
-            """
-            for index, item in enumerate(self):
-                if item == key:
-                    super().__setitem__(index, value)
-                else:
-                    if isinstance(item, List) and flattend:
-                        item[key] = value
+            self.setItem(key, value, flattend)
 
     def __add__(self, other):
         pat = self._copy(List())
@@ -151,6 +227,57 @@ class List(list):
         returns a copy of self as Pattern(self)
         """ 
         return self._copy(Pattern())
+
+    def setItem(self, key, value, flattend=True):
+        """
+        set static item
+        """ 
+        for index, item in enumerate(self):
+            if item == key:
+                super().__setitem__(index, value)
+            else:
+                if isinstance(item, List) and flattend:
+                    item[key] = value
+
+    def getItem(self, key, flattend=True):
+        """
+        get static item
+        """  
+        for item in self:
+            if item == key:
+                return item
+            else:
+                if isinstance(item, List) and flattend:
+                    n = item[key]
+                    if n: return n;
+
+    def setVariable(self, key, value, flattend=True):
+        """
+        set static item
+        """ 
+        for item in self:
+            if type(item) is List.Variable:
+                if item.name == key.name:
+                    item.clear()
+                    if type(value) is List:
+                        item.extend(value)
+                    else:
+                        item.append(value)
+                elif flattend:
+                    item[key] = value
+                    
+
+    def getVariable(self, key, flattend=True):
+        """
+        get variable item
+        """  
+        for item in self:
+            if type(item) is List.Variable:
+                if item.name == key.name:
+                    return item
+                elif flattend:
+                    n = item[key]
+                    if n: return n;
     
 class VariableList(List):
     """
@@ -181,15 +308,109 @@ class VariableList(List):
 # propper alias
 List.Variable = VariableList
 
+
+
 if __name__ == "__main__":
 
     # Test & usage example
 
     # String
 
-    
+    groceries = String("get groceries")
 
+    print(repr(groceries))
+
+    """
+    get groceries
+    """
+
+    groceries["groceries"] = "3 bananas"
+    groceries["groceries"] += ", 5 apples"
+    groceries["groceries"] += ", 2 pineapples"
+
+    print(groceries)
+
+    """
+    get 3 bananas, 5 apples, 2 pineapples
+    """
+
+    print(repr(groceries))
+
+    """
+    get 'groceries':'3 bananas, 5 apples, 2 pineapples'
+    """
+
+    print("3 bananas" in groceries) # True
+    print("bananas" in groceries) # True
+    print("5 apples" in groceries) # True
+    print("groceries" in groceries) # True
+    print(List.Variable("groceries") in groceries) # False
+    print("get " in groceries) # True
+    print("get" in groceries) # True
     
+    cpp_class = String("""class V_ClassName {
+public:
+    // Default constructor
+    V_ClassName() {
+        V_Constructor
+    }
+    
+    V_PublicFunctions
+};""")
+
+    cpp_class["V_ClassName"] = "SomeNewClass"
+    cpp_class["V_Constructor"] = 'cout << "Default constructor called!" << endl;'
+    cpp_class["V_PublicFunctions"] = """// A simple member function
+    void greet() {
+        cout << "Hello from V_ClassName!" << endl;
+    }"""
+    
+    print(cpp_class)
+
+    """class SomeNewClass {
+public:
+    // Default constructor
+    SomeNewClass() {
+        cout << "Default constructor called!" << endl;
+    }
+    
+    // A simple member function
+    void greet() {
+        cout << "Hello from SomeNewClass!" << endl;
+    }
+};"""
+
+    print(repr(cpp_class))
+
+    """
+    'class 'MyClass':'SomeNewClass' {\npublic:\n    // Default constructor\n
+    'MyClass':'SomeNewClass'() {\n        '#Constructor':'cout << "Default const
+    ructor called!" << endl;'\n    }\n    \n    '#PublicFunctions':'// A simple
+    member function\n    void greet() {\n        cout << "Hello from SomeNewClas
+    s!" << endl;\n    }'\n};'
+    """
+
+    a = String("hello")
+    a["hello"] = "hallo hello"
+    a["hallo"] = "hello hallo"
+
+    print(repr(a))
+    print(a)
+
+    """
+    ''hello':'hello 'hallo':'hallo hello hallo' hello''
+    hello hallo hello hallo hello
+    """
+
+    a.flush()
+
+    print(repr(a))
+    print(a)
+
+    """
+    ''hello':'hello 'hallo':'hallo hello hallo hello hallo' hello 'hallo':'hallo hello hallo hello hallo' hello''
+    hello hallo hello hallo hello hallo hello hallo hello hallo hello hallo hello
+    """
 
     # List
 
@@ -348,4 +569,5 @@ QWidget {
     """
 
     # Tree
+
     
