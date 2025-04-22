@@ -4,7 +4,7 @@ patlang.py
 Author: Marijn van Tricht
 Date: 2025-04-17
 Description:
-    Pattern language contains:
+    Pattern language, contains:
     String
     List (& List.Variable)
     Tree (& Tree.Variable)
@@ -303,7 +303,178 @@ class VariableList(List):
 # propper alias
 List.Variable = VariableList
 
+class Tree():
+    """
+    Tree is a node to a 2D tree
+    """
 
+    def __init__(self, value="", *args):
+        self._lower_node = None
+        self._next_node = None
+        self.value = value
+        if len(args) > 0: self._addmerge(*args);
+
+    # add if not there
+    def _addnext(self, value):
+        if self._next_node == None:
+            self._next_node = Tree(value)
+            return self._next_node
+        else:
+            if isinstance(value, VariableTree):
+                if isinstance(self._next_node, VariableTree):
+                    if self._next_node.name == value.name:
+                        return self._next_node
+            elif self._next_node.value == value:
+                return self._next_node
+            return self._next_node._addbelow(value)
+
+    # add if not there
+    def _addbelow(self, value):
+        if self._lower_node == None:
+            self._lower_node = Tree(value)
+            return self._lower_node
+        else:
+            if self._lower_node.value == value:
+                return self._lower_node
+            return self._lower_node._addbelow(value)
+
+    def _addmerge(self, *args):
+        node = self
+            
+        for arg in args:
+            node = node._addnext(arg)
+
+        return node
+        
+    def __getitem__(self, key):
+        return self._addmerge(key)
+
+    def __setitem__(self, key, value):
+        node = self._addmerge(key)
+        node.value = value
+        return node
+
+    def __add__(self, other):
+        return ""
+
+    def __sub__(self, other):
+        return ""
+
+    def __contains__(self, key):
+        return False
+
+    def __iter__(self):
+        self.routes = [(self,[])]
+        return self
+
+    def __next__(self):
+        if len(self.routes) > 0:
+            node, path = self.routes.pop()
+            while node != None:
+                if node._lower_node != None:
+                    self.routes.append((node._lower_node, list(path)))
+                path.append(node)
+
+                node = node._next_node
+            return path
+        else:
+            raise StopIteration
+    
+    def __str__(self, endline=""):
+        """
+        return serialized string of self
+        """
+        out = ""
+        
+        for path in self:
+            for item in path:
+                out += str(item.value)
+            out += str(endline)
+                
+        return out
+
+    def __repr__(self, endline=""):
+        """
+        return serialized repr of self
+        """
+        out = ""
+        
+        for path in self:
+            for item in path:
+                if isinstance(item, VariableTree):
+                    out += repr(item.name) + ":"
+                out += repr(item.value)
+            out += repr(endline)
+        
+        return out
+
+    def _copy(self, newPattern):
+        """
+        private copy, cause self_type cannot be as default argument
+        """
+        return ""
+
+    def copy(self):
+        return self._copy(Pattern())
+
+    def setItem(self, key, value, flattend=True):
+        """
+        set static item
+        """ 
+        for path in self:
+            for item in path:
+                if item.value == key:
+                    item.value = value
+
+    def getItem(self, key, flattend=True):
+        """
+        get static item
+        """
+        for path in self:
+            for item in path:
+                if item.value == key:
+                    return item
+
+    def setVariable(self, key, value, flattend=True):
+        """
+        set variable item
+        """
+        for path in self:
+            for item in path:
+                if isinstance(item.value, VariableTree):
+                    if item.value.name == key:
+                        item.value.value = value
+                if isinstance(item.value, Tree) and flattend:
+                    item.value.setVariable(key, value, flattend)
+        
+    def getVariable(self, key, flattend=True):
+        """
+        get variable item
+        """  
+        for path in self:
+            for item in path:
+                if isinstance(item.value, VariableTree):
+                    if item.value.name == key:
+                        return item.value
+                if isinstance(item.value, Tree) and flattend:
+                    n = item.value.getVariable(key, flattend)
+                    if n: return n;
+    
+class VariableTree(Tree):
+    """
+    a Variable is a Pattern with a name
+    """
+    
+    def __init__(self, name = "", *args):
+        super().__init__(*args)
+        self.name = name
+    
+    def copy(self):
+        newVariable = VariableTree(self.name)
+        return self._copy(newVariable)
+
+# propper alias
+Tree.Variable = VariableTree
 
 if __name__ == "__main__":
 
