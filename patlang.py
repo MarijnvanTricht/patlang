@@ -146,7 +146,7 @@ class List(list):
             return newPat
 
         if isinstance(key, List.Variable):
-            return self.getVariable(key, flattend)
+            return self.getVariable(key.name, flattend)
         else:
             return self.getItem(key, flattend)
 
@@ -155,7 +155,7 @@ class List(list):
         will set a nested (if flattend) variable (if key is variable) or item whose name is matching the key
         """
         if isinstance(key, List.Variable):
-            self.setVariable(key, value, flattend)
+            self.setVariable(key.name, value, flattend)
         else:
             self.setItem(key, value, flattend)
 
@@ -253,14 +253,14 @@ class List(list):
         """ 
         for item in self:
             if type(item) is List.Variable:
-                if item.name == key.name:
+                if item.name == key:
                     item.clear()
                     if type(value) is List:
                         item.extend(value)
                     else:
                         item.append(value)
                 elif flattend:
-                    item[key] = value
+                    item.setVariable(key, value)
 
     def getVariable(self, key, flattend=True):
         """
@@ -268,10 +268,10 @@ class List(list):
         """  
         for item in self:
             if type(item) is List.Variable:
-                if item.name == key.name:
+                if item.name == key:
                     return item
                 elif flattend:
-                    n = item[key]
+                    n = item.getVariable(key)
                     if n: return n;
     
 class VariableList(List):
