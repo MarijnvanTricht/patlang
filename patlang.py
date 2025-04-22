@@ -57,9 +57,6 @@ class String(str):
             
         return out
 
-    def __sub__(self, other):
-        pass # TODO
-
     def __contains__(self, key):
         if isinstance(key, str):
             if (key in str(self)):
@@ -80,7 +77,7 @@ class String(str):
         for key in variables:
             for otherKey in variables:
                 if key != otherKey:
-                    variables[otherKey] = variables[otherKey].replace(str(key), str(self.variables[key]))
+                    variables[otherKey] = variables[otherKey].replace(str(key), repr(key) + ":" + repr(variables[key]))
         
         for key in variables:
             out = out.replace(str(key), repr(key) + ":" + repr(variables[key]))
@@ -100,9 +97,9 @@ class String(str):
     # for compatiblity accross other patlang types
     def setItem(self, key, value):
         """
-        set static item
-        """ 
-        pass #TODO
+        set 'static' item
+        """
+        self.setVariable(key, value)
 
     # for compatiblity accross other patlang types
     def getItem(self, key):
@@ -115,7 +112,7 @@ class String(str):
     # for compatiblity accross other patlang types
     def setVariable(self, key, value):
         """
-        set static item
+        set variable item
         """ 
         self[key] = value
 
@@ -157,7 +154,6 @@ class List(list):
         """
         will set a nested (if flattend) variable (if key is variable) or item whose name is matching the key
         """
-
         if isinstance(key, List.Variable):
             self.setVariable(key, value, flattend)
         else:
@@ -253,7 +249,7 @@ class List(list):
 
     def setVariable(self, key, value, flattend=True):
         """
-        set static item
+        set variable item
         """ 
         for item in self:
             if type(item) is List.Variable:
@@ -265,7 +261,6 @@ class List(list):
                         item.append(value)
                 elif flattend:
                     item[key] = value
-                    
 
     def getVariable(self, key, flattend=True):
         """
@@ -347,6 +342,25 @@ if __name__ == "__main__":
     print(List.Variable("groceries") in groceries) # False
     print("get " in groceries) # True
     print("get" in groceries) # True
+
+    print("6 apples" in groceries) # False
+
+    groceries["5"] = "6"
+
+    print("6 apples" in groceries) # True
+
+    print(repr(groceries))
+
+    """
+    'get 'groceries':"3 bananas, ''5':'6'':'6' apples, 2 pineapples"'
+    """
+
+    groceries = String(groceries)
+    print(repr(groceries))
+
+    """
+    'get 3 bananas, 6 apples, 2 pineapples'
+    """
     
     cpp_class = String("""class V_ClassName {
 public:

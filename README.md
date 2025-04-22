@@ -1,7 +1,5 @@
 <!--TOC-->
 
- [TOC]
-
 # patlang
 
 **Pattern language.**
@@ -20,7 +18,7 @@ A **pattern** can be devided into **2 parts**, a **static** part and a **dynamic
 
 -----
 
-**Types**
+## Types
 
 - String based pattern
 
@@ -36,7 +34,9 @@ A **pattern** can be devided into **2 parts**, a **static** part and a **dynamic
 
 ---
 
-## String
+## Example usage
+
+### String
 
 Create a new pattern
 
@@ -70,7 +70,7 @@ Calling the string representation will replace the key with its corresponding va
 
 Which can be usefull when creating code templates or templates of anykind, but can be prone to bugs, because there is no difference between text and a variable, for this the patlang.List is better.
 
-### Manipulation
+#### Manipulation
 
 ```python
 print("3 bananas" in groceries) # True
@@ -81,7 +81,34 @@ print("get " in groceries) # True
 print("get" in groceries) # True
 ```
 
-### C++ class template
+And items can be changed using the variables
+
+```python
+print("6 apples" in groceries) # False
+groceries["5"] = "6"
+print("6 apples" in groceries) # True
+```
+
+But keep in mind that strings in python are officially immutable, and changing values will add variables, this means that `print(repr(groceries))` will now output
+
+```
+'get 'groceries':"3 bananas, ''5':'6'':'6' apples, 2 pineapples"'
+```
+
+And '5' is now changed into a variable. This can be frozen when copied to a new String.
+
+```python
+groceries = String(groceries)
+print(repr(groceries))
+```
+
+Will now output
+
+```
+'get 3 bananas, 6 apples, 2 pineapples'
+```
+
+#### C++ class template
 
 A basic c++ class template
 
@@ -128,7 +155,7 @@ public:
 };
 ```
 
-### Recursion
+#### Recursion
 
 Because of the ability to replace values inside the value of the other variables, recursion can occur. For example:
 
@@ -164,7 +191,7 @@ Will return
 hello hallo hello hallo hello hallo hello hallo hello hallo hello hallo hello
 ```
 
-## List
+### List
 
 Create aliases
 
@@ -248,7 +275,7 @@ Atleast now
 print("5 apples" in groceries) # True
 ```
 
-### C++ Class template
+#### C++ Class template
 
 A basic class template
 
@@ -296,7 +323,7 @@ public:
 
 Note: that className is assigned after assigning PublicFunctions where the ClassName variable is used (If a variable is added later this value is replaced when the variable is assigned a new value.)
 
-### CSS template
+#### CSS template
 
 Shorter aliases can be created to make it easier to create patterns
 
@@ -345,7 +372,7 @@ QWidget {
 }
 ```
 
-### Recursion
+#### Recursion
 
 Recursion can only happen when values are assigned. Each time they are assigned all variables are assigned.
 
@@ -385,7 +412,7 @@ Which will output
 hallo hello hello hallo hello hallo 
 ```
 
-## Tree
+### Tree
 
 ....
 
