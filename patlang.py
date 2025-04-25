@@ -10,6 +10,12 @@ Description:
     Tree (& Tree.Variable)
 """
 
+#------------------------------------------------------------------------------#
+#                                                                              #
+# String                                                                       #
+#                                                                              #
+#------------------------------------------------------------------------------#
+
 class String(str):
     """
     a patlang String
@@ -50,7 +56,8 @@ class String(str):
         for key in variables:
             for otherKey in variables:
                 if key != otherKey:
-                    variables[otherKey] = variables[otherKey].replace(str(key), str(self.variables[key]))
+                    variables[otherKey] = variables[otherKey].replace(
+                        str(key), str(self.variables[key]))
         
         for key in variables:
             out = out.replace(str(key), str(variables[key]))
@@ -77,10 +84,12 @@ class String(str):
         for key in variables:
             for otherKey in variables:
                 if key != otherKey:
-                    variables[otherKey] = variables[otherKey].replace(str(key), repr(key) + ":" + repr(variables[key]))
+                    variables[otherKey] = variables[otherKey].replace(
+                        str(key), repr(key) + ":" + repr(variables[key]))
         
         for key in variables:
-            out = out.replace(str(key), repr(key) + ":" + repr(variables[key]))
+            out = out.replace(
+                str(key), repr(key) + ":" + repr(variables[key]))
             
         return out
 
@@ -90,7 +99,8 @@ class String(str):
         for key in variables:
             for otherKey in variables:
                 if key != otherKey:
-                    variables[otherKey] = variables[otherKey].replace(str(key), str(self.variables[key]))
+                    variables[otherKey] = variables[otherKey].replace(
+                        str(key), str(self.variables[key]))
                     
         self.variables = variables
 
@@ -122,7 +132,13 @@ class String(str):
         get variable item
         """  
         return self[key]
-        
+
+#------------------------------------------------------------------------------#
+#                                                                              #
+# List                                                                         #
+#                                                                              #
+#------------------------------------------------------------------------------#
+
 class List(list):
     """
     a patlang List
@@ -131,7 +147,8 @@ class List(list):
     def __init__(self, *args):
         """
         Init a Pattern (list) with *args
-        """ 
+        """
+        self.variables = dict()
         super().__init__(args)
         
     def __getitem__(self, key, flattend = True):
@@ -188,11 +205,12 @@ class List(list):
         """
         return self.__sub__(other)
 
-    def __contains__(self, key):
+    def __contains__(self, key, flattend=True):
         """
         if __getitem__ returns a valid item, this returns True
         """
-        if self.__getitem__(key): return True
+        if self.__getitem__(key, flattend):
+            return True
         return False
     
     def __str__(self):
@@ -250,7 +268,8 @@ class List(list):
     def setVariable(self, key, value, flattend=True):
         """
         set variable item
-        """ 
+        """
+        
         for item in self:
             if type(item) is List.Variable:
                 if item.name == key:
@@ -261,11 +280,14 @@ class List(list):
                         item.append(value)
                 elif flattend:
                     item.setVariable(key, value)
+            elif isinstance(item, List) and flattend:
+                item.setVariable(key, value)
 
     def getVariable(self, key, flattend=True):
         """
         get variable item
-        """  
+        """
+        
         for item in self:
             if type(item) is List.Variable:
                 if item.name == key:
@@ -273,7 +295,17 @@ class List(list):
                 elif flattend:
                     n = item.getVariable(key)
                     if n: return n;
-    
+            elif isinstance(item, List) and flattend:
+                n = item.getVariable(key)
+                if n: return n;
+
+    def flush(self, key, flattend=True):
+        """
+        updating variables and values (no garanteed success)
+        """
+        var = getVariable(key, flattend)
+        setVariable(var.name, var.value, flattend)
+
 class VariableList(List):
     """
     a Variable is a Pattern with a name
@@ -303,32 +335,36 @@ class VariableList(List):
 # propper alias
 List.Variable = VariableList
 
+#------------------------------------------------------------------------------#
+#                                                                              #
+# Tree                                                                         #
+#                                                                              #
+#------------------------------------------------------------------------------#
+
 class Tree():
     """
     Tree is a node to a 2D tree
     """
 
-    def __init__(self, value="", *args):
+    def __init__(self, *args):
         self._lower_node = None
         self._next_node = None
-        self.value = value
-        if len(args) > 0: self._addmerge(*args);
+        self.value = None
+        if len(args) > 0: self._setmerge(*args);
 
-    # add if not there
     def _addnext(self, value):
         if self._next_node == None:
             self._next_node = Tree(value)
             return self._next_node
         else:
-            if isinstance(value, VariableTree):
-                if isinstance(self._next_node, VariableTree):
+            if isinstance(value, Tree.Variable):
+                if isinstance(self._next_node, Tree.Variable):
                     if self._next_node.name == value.name:
                         return self._next_node
             elif self._next_node.value == value:
                 return self._next_node
             return self._next_node._addbelow(value)
 
-    # add if not there
     def _addbelow(self, value):
         if self._lower_node == None:
             self._lower_node = Tree(value)
@@ -338,29 +374,108 @@ class Tree():
                 return self._lower_node
             return self._lower_node._addbelow(value)
 
-    def _addmerge(self, *args):
+    def _setmerge(self, value, *args):
         node = self
+
+        if node.value == None:
+            node.value = value
+        elif node.value == value:
+            pass
+        else:
+            node = node._addbelow(value)
             
         for arg in args:
             node = node._addnext(arg)
 
         return node
+
+    def _remove(self, value):
+        """
+        private func used by __sub__, returns a copy minus given value
+        """
+        # should be able to have inplace sub, but what about the first element
+        # self cannot be reassigned
+        # for now _remove returns a copy
         
+        newTree = Tree()
+        for path in self:
+            T = newTree
+            for item in path:
+                if isinstance(value, Tree.Variable):
+                    if isinstance(item.value, Tree.Variable):
+                        if value.name != item.value.name:
+                            T = T[item.value._remove(value)]
+                        else:
+                            continue
+                        
+                if isinstance(item.value, Tree):
+                    if isinstance(value, Tree):
+                        if item.value != value:
+                            T = T[item.value._remove(value)]
+                else:
+                    if item.value != value:
+                        T = T[item.value]
+        return newTree
+
+    def __eq__(self, other):
+        if isinstance(other, Tree):
+            for path in self:
+                for otherpath in other:
+                    for item, otheritem in zip(path, otherpath):
+                        if item.value != otheritem.value:
+                            return False
+            return True
+        return False
+            
     def __getitem__(self, key):
-        return self._addmerge(key)
+        node = self._setmerge(key)
+        if not node._next_node:
+            node._addnext(None)
+        return node._next_node
 
     def __setitem__(self, key, value):
-        node = self._addmerge(key)
+        node = self._setmerge(key)
         node.value = value
         return node
 
     def __add__(self, other):
-        return ""
+        n = self.copy()
+        n._setmerge(other)
+        return n
 
+    def __iadd__(self, other):
+        self._setmerge(other)
+        return self
+        
     def __sub__(self, other):
-        return ""
+        return self._remove(other)
 
-    def __contains__(self, key):
+    def __contains__(self, value, flattend=True):
+        lower_nodes = [self]
+        while len(lower_nodes) > 0:
+            node = lower_nodes.pop()
+            while node != None:
+                if node._lower_node:
+                    lower_nodes.append(node._lower_node)
+                    
+                if isinstance(value, Tree.Variable):
+                    if isinstance(node.value, Tree.Variable):
+                        if value.name == node.value.name:
+                            return True
+
+                if isinstance(value, Tree):
+                    if isinstance(node.value, Tree):
+                        if value.value == node.value.value:
+                            return True
+                else:
+                    if isinstance(node.value, Tree) and flattend:
+                        if value in node.value:
+                            return True
+                    else:
+                        if node.value == value:
+                            return True
+
+                node = node._next_node
         return False
 
     def __iter__(self):
@@ -380,20 +495,19 @@ class Tree():
         else:
             raise StopIteration
     
-    def __str__(self, endline=""):
+    def __str__(self):
         """
         return serialized string of self
         """
         out = ""
-        
         for path in self:
             for item in path:
-                out += str(item.value)
-            out += str(endline)
-                
+                if item.value != None:
+                    out += str(item.value)
+
         return out
 
-    def __repr__(self, endline=""):
+    def __repr__(self):
         """
         return serialized repr of self
         """
@@ -401,21 +515,28 @@ class Tree():
         
         for path in self:
             for item in path:
-                if isinstance(item, VariableTree):
-                    out += repr(item.name) + ":"
-                out += repr(item.value)
-            out += repr(endline)
+                if isinstance(item.value, Tree.Variable):
+                    out += repr(item.value.name) + ":"
+                if item.value != None:
+                    out += repr(item.value)
         
         return out
 
-    def _copy(self, newPattern):
+    def _copy(self, newTree):
         """
         private copy, cause self_type cannot be as default argument
         """
-        return ""
+        for path in self:
+            T = newTree
+            for item in path:
+                if isinstance(item.value, Tree):
+                    T = T[item.value.copy()]
+                else:
+                    T = T[item.value]
+        return newTree
 
     def copy(self):
-        return self._copy(Pattern())
+        return self._copy(Tree())
 
     def setItem(self, key, value, flattend=True):
         """
@@ -425,6 +546,8 @@ class Tree():
             for item in path:
                 if item.value == key:
                     item.value = value
+                elif isinstance(item.value, Tree) and flattend:
+                    item.value.setItem(key, value, flattend)
 
     def getItem(self, key, flattend=True):
         """
@@ -434,6 +557,9 @@ class Tree():
             for item in path:
                 if item.value == key:
                     return item
+                elif isinstance(item.value, Tree) and flattend:
+                    n = item.value.getItem(key, flattend)
+                    if n: return n;
 
     def setVariable(self, key, value, flattend=True):
         """
@@ -441,7 +567,7 @@ class Tree():
         """
         for path in self:
             for item in path:
-                if isinstance(item.value, VariableTree):
+                if isinstance(item.value, Tree.Variable):
                     if item.value.name == key:
                         item.value.value = value
                 if isinstance(item.value, Tree) and flattend:
@@ -450,309 +576,35 @@ class Tree():
     def getVariable(self, key, flattend=True):
         """
         get variable item
-        """  
+        """
         for path in self:
             for item in path:
-                if isinstance(item.value, VariableTree):
+                if isinstance(item.value, Tree.Variable):
                     if item.value.name == key:
-                        return item.value
+                        return item.value.value
                 if isinstance(item.value, Tree) and flattend:
                     n = item.value.getVariable(key, flattend)
                     if n: return n;
+
+    def flush(self, key, flattend=True):
+        """
+        updating variables and values (no garanteed success)
+        """
+        var = getVariable(key, flattend)
+        setVariable(var.name, var.value, flattend)
     
 class VariableTree(Tree):
     """
     a Variable is a Pattern with a name
     """
     
-    def __init__(self, name = "", *args):
-        super().__init__(*args)
+    def __init__(self, name = "", value = Tree(), *args):
+        super().__init__(value, *args)
         self.name = name
     
     def copy(self):
-        newVariable = VariableTree(self.name)
+        newVariable = Tree.Variable(self.name)
         return self._copy(newVariable)
 
 # propper alias
-Tree.Variable = VariableTree
-
-if __name__ == "__main__":
-
-    # Test & usage example
-
-    # String
-
-    groceries = String("get groceries")
-
-    print(repr(groceries))
-
-    """
-    get groceries
-    """
-
-    groceries["groceries"] = "3 bananas"
-    groceries["groceries"] += ", 5 apples"
-    groceries["groceries"] += ", 2 pineapples"
-
-    print(groceries)
-
-    """
-    get 3 bananas, 5 apples, 2 pineapples
-    """
-
-    print(repr(groceries))
-
-    """
-    get 'groceries':'3 bananas, 5 apples, 2 pineapples'
-    """
-
-    print("3 bananas" in groceries) # True
-    print("bananas" in groceries) # True
-    print("5 apples" in groceries) # True
-    print("groceries" in groceries) # True
-    print(List.Variable("groceries") in groceries) # False
-    print("get " in groceries) # True
-    print("get" in groceries) # True
-
-    print("6 apples" in groceries) # False
-
-    groceries["5"] = "6"
-
-    print("6 apples" in groceries) # True
-
-    print(repr(groceries))
-
-    """
-    'get 'groceries':"3 bananas, ''5':'6'':'6' apples, 2 pineapples"'
-    """
-
-    groceries = String(groceries)
-    print(repr(groceries))
-
-    """
-    'get 3 bananas, 6 apples, 2 pineapples'
-    """
-    
-    cpp_class = String("""class V_ClassName {
-public:
-    // Default constructor
-    V_ClassName() {
-        V_Constructor
-    }
-    
-    V_PublicFunctions
-};""")
-
-    cpp_class["V_ClassName"] = "SomeNewClass"
-    cpp_class["V_Constructor"] = 'cout << "Default constructor called!" << endl;'
-    cpp_class["V_PublicFunctions"] = """// A simple member function
-    void greet() {
-        cout << "Hello from V_ClassName!" << endl;
-    }"""
-    
-    print(cpp_class)
-
-    """class SomeNewClass {
-public:
-    // Default constructor
-    SomeNewClass() {
-        cout << "Default constructor called!" << endl;
-    }
-    
-    // A simple member function
-    void greet() {
-        cout << "Hello from SomeNewClass!" << endl;
-    }
-};"""
-
-    print(repr(cpp_class))
-
-    """
-    'class 'MyClass':'SomeNewClass' {\npublic:\n    // Default constructor\n
-    'MyClass':'SomeNewClass'() {\n        '#Constructor':'cout << "Default const
-    ructor called!" << endl;'\n    }\n    \n    '#PublicFunctions':'// A simple
-    member function\n    void greet() {\n        cout << "Hello from SomeNewClas
-    s!" << endl;\n    }'\n};'
-    """
-
-    a = String("hello")
-    a["hello"] = "hallo hello"
-    a["hallo"] = "hello hallo"
-
-    print(repr(a))
-    print(a)
-
-    """
-    ''hello':'hello 'hallo':'hallo hello hallo' hello''
-    hello hallo hello hallo hello
-    """
-
-    a.flush()
-
-    print(repr(a))
-    print(a)
-
-    """
-    ''hello':'hello 'hallo':'hallo hello hallo hello hallo' hello 'hallo':'hallo hello hallo hello hallo' hello''
-    hello hallo hello hallo hello hallo hello hallo hello hallo hello hallo hello
-    """
-
-    # List
-
-    groceries = List("get ",List.Variable("groceries"))
-
-    print(repr(groceries))
-
-    """
-    'get '('groceries':)
-    """
-
-    groceries[List.Variable("groceries")] = "3 bananas"
-    groceries[List.Variable("groceries")] += ", 5 apples"
-    groceries[List.Variable("groceries")].append(", 2 pineapples")
-
-    print(groceries)
-
-    """
-    get 3 bananas, 5 apples, 2 pineapples
-    """
-
-    print(repr(groceries))
-
-    """
-    'get '('groceries':'3 bananas'', 5 apples'', 2 pineapples')
-    """
-
-    print("3 bananas" in groceries) # True
-    print("bananas" in groceries) # False
-    print("5 apples" in groceries) # False
-    print("groceries" in groceries) # False
-    print(List.Variable("groceries") in groceries) # True
-    print("get " in groceries) # True
-    print("get" in groceries) # False
-
-    #groceries["groceries"] -= ", 5 apples"
-    #groceries["groceries"] += List(", ","5 apples")
-    groceries[", 5 apples"] = List(", ","5 apples")
-
-    print(repr(groceries))
-    print("5 apples" in groceries) # True
-    
-    cpp_class = List("class ", List.Variable("ClassName"),""" {
-public:
-    // Default constructor
-    """, List.Variable("ClassName"), """() {
-        """, List.Variable("Constructor"), """
-    }
-    
-    """, List.Variable("PublicFunctions"), """
-};""")
-
-    cpp_class[List.Variable("Constructor")] = 'cout << "Default constructor called!" << endl;'
-    cpp_class[List.Variable("PublicFunctions")] = List("""// A simple member function
-    void greet() {
-        cout << "Hello from """, List.Variable("ClassName"), """!" << endl;
-    }""")
-
-    cpp_class[List.Variable("ClassName")] = "SomeNewClass"
-    
-    print(cpp_class)
-
-    """
-    class SomeNewClass {
-    public:
-        // Default constructor
-        SomeNewClass() {
-            cout << "Default constructor called!" << endl;
-        }
-        
-        // A simple member function
-        void greet() {
-            cout << "Hello from SomeNewClass!" << endl;
-        }
-    };
-    """
-
-    print(repr(cpp_class))
-
-    """
-    'class '('ClassName':'SomeNewClass')' {\npublic:\n    // Default constructor
-    \n    '('ClassName':'SomeNewClass')'() {\n        '('Constructor':'cout << "
-    Default constructor called!" << endl;')'\n    }\n    \n    '('PublicFunction
-    s':'// A simple member function\n    void greet() {\n        cout << "Hello
-    from '('ClassName':'SomeNewClass')'!" << endl;\n    }')'\n};'
-    """
-
-    # short alias
-    P = List # P for pattern
-    V = List.Variable
-
-    # Create css pattern
-    css = P("""
-/* General App Style */
-QWidget {
-    font-family: "Segoe UI", sans-serif;
-    font-size: """, V(P("QWidget", "font-size")),""";
-    background-color: """, V(P("QWidget", "background-color")),""";
-    color: """, V(P("QWidget", "color")),""";
-}
-""")
-
-    # Set defaults
-    css[V(P("QWidget", "font-size"))] = "14px"
-    css[V(P("QWidget", "background-color"))] = "#000000"
-    css[V(P("QWidget", "color"))] = "#ffffff"
-    css[V(P("QWidget", "color"))] += "#55555"
-    css[V(P("QWidget", "color"))] -= "#55555"
-
-    print(repr(css))
-
-    """
-    P('\n/* General App Style */\nQWidget {\n    font-family: "Segoe UI", sans-serif
-    ;\n    font-size: 'P('QWidget''font-size'):P('14px')';\n    background-color: 'P
-    ('QWidget''background-color'):P('#000000')';\n    color: 'P('QWidget''color'):P(
-    '#ffffff')';\n}\n')
-    """
-
-    print("")
-
-    # Change color
-    css[V(P("QWidget", "color"))] = "#252525"
-
-    print(str(css))
-
-    """
-    /* General App Style */
-    QWidget {
-        font-family: "Segoe UI", sans-serif;
-        font-size: 14px;
-        background-color: #000000;
-        color: #252525;
-    }
-    """
-
-    a = P(V("hello"))
-    a[V("hello")] = P("hallo hello ") + V("hallo")
-    a[V("hallo")] = P("hello hallo ") + V("hello")
-
-    print(repr(a))
-    print(a)
-    
-    """
-    ('hello':'hallo hello '('hallo':'hello hallo '('hello':)))
-    hallo hello hello hallo 
-    """
-
-    a[V("hello")] += a[V("hallo")]
-
-    print(repr(a))
-    print(a)
-
-    """
-    ('hello':'hallo hello '('hallo':'hello hallo '('hello':))('hallo':'hello hallo '('hello':)))
-    hallo hello hello hallo hello hallo 
-    """
-
-    # Tree
-
-    
+Tree.Variable = VariableTree   
