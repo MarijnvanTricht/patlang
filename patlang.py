@@ -269,6 +269,22 @@ class List(list):
         """
         set variable item
         """
+
+	# This should logically be a dict of variables that can be updated and
+        # keeps reference instead of duplicate variables inside the patterns
+        # right?
+        
+        # There is a good reason to not do that:
+        # Variables should stick with previous values assigned, even if they
+        # have the same name, because otherwise, which one is true?, both may be
+        # true.
+        
+        # For example (what if classnames are lateron combined into a file which
+        # may be a List itself. Updating the variables is a consious decision of
+        # the desiginer/coder, use:
+        # setVariable(getVariable().name, getVariable().value) or use flush(key)
+
+        # or should one not use flatten at that point?
         
         for item in self:
             if type(item) is List.Variable:
@@ -287,7 +303,9 @@ class List(list):
         """
         get variable item
         """
-        
+
+        # which variable? it returns just the first and that may be a flaw.
+         
         for item in self:
             if type(item) is List.Variable:
                 if item.name == key:
