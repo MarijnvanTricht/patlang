@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "patlang"
 version = "0.0.1"
 authors = [
-  { name="MarijnvTricht", email="marijn-pystuff@proton.me" },
+  { name="MarijnvTricht", email="marijnpy@gmx.com" },
 ]
 description = "pattern language"
 readme = "README.md"
