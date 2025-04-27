@@ -47,10 +47,11 @@ class String(str):
         return self.variables[key]
     
     def __setitem__(self, key, value):
-        self.variables.update({key: value})    
+        self.variables.pop(key, None)
+        self.variables[key] = value
 
     def __add__(self, other):
-        pat = Pattern(super().__add__(other))
+        pat = String(super().__add__(other))
         pat.variables = self.variables
         if isinstance(other, String):
             pat.variables.update(other.variables)
@@ -66,12 +67,6 @@ class String(str):
     def __str__(self):
         out = super().__str__()
         variables = dict(self.variables)
-
-        for key in variables:
-            for otherKey in variables:
-                if key != otherKey:
-                    variables[otherKey] = variables[otherKey].replace(
-                        str(key), str(self.variables[key]))
         
         for key in variables:
             out = out.replace(str(key), str(variables[key]))
@@ -94,12 +89,6 @@ class String(str):
     def __repr__(self):
         out = super().__repr__()
         variables = dict(self.variables)
-
-        for key in variables:
-            for otherKey in variables:
-                if key != otherKey:
-                    variables[otherKey] = variables[otherKey].replace(
-                        str(key), repr(key) + ":" + repr(variables[key]))
         
         for key in variables:
             out = out.replace(
@@ -123,6 +112,7 @@ class String(str):
         """
         set 'static' item
         """
+        # cannot replace in self, because string is immutable
         self.setVariable(key, value)
 
     # for compatiblity accross other patlang types

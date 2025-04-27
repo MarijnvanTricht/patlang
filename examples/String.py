@@ -63,13 +63,15 @@ V_ClassName() {
 V_PublicFunctions
 };""")
 
+cpp_class["V_ClassName"] = "SomeNewClass"
 cpp_class["V_Constructor"] = 'cout << "Default constructor called!" << endl;'
 cpp_class["V_PublicFunctions"] = """// A simple member function
 void greet() {
     cout << "Hello from V_ClassName!" << endl;
 }"""
 
-cpp_class["V_ClassName"] = "SomeNewClass"
+cpp_class["V_ClassName"] = cpp_class["V_ClassName"]
+
 
 print(cpp_class)
 
@@ -89,11 +91,10 @@ void greet() {
 print(repr(cpp_class))
 
 """
-'class 'MyClass':'SomeNewClass' {\npublic:\n    // Default constructor\n
-'MyClass':'SomeNewClass'() {\n        '#Constructor':'cout << "Default const
-ructor called!" << endl;'\n    }\n    \n    '#PublicFunctions':'// A simple
-member function\n    void greet() {\n        cout << "Hello from SomeNewClas
-s!" << endl;\n    }'\n};'
+'class 'V_ClassName':'SomeNewClass' {\npublic:\n// Default constructor\n'V_Class
+Name':'SomeNewClass'() {\n    'V_Constructor':'cout << "Default constructor call
+ed!" << endl;'\n}\n\n'V_PublicFunctions':'// A simple member function\nvoid gree
+t() {\n    cout << "Hello from 'V_ClassName':'SomeNewClass'!" << endl;\n}'\n};'
 """
 
 a = String("hello")
@@ -104,8 +105,8 @@ print(repr(a))
 print(a)
 
 """
-''hello':'hello 'hallo':'hallo hello hallo' hello''
-hello hallo hello hallo hello
+''hello':''hallo':'hello hallo' hello''
+hello hallo hello
 """
 
 a.flush()
@@ -114,6 +115,6 @@ print(repr(a))
 print(a)
 
 """
-''hello':'hello 'hallo':'hallo hello hallo hello hallo' hello 'hallo':'hallo hello hallo hello hallo' hello''
-hello hallo hello hallo hello hallo hello hallo hello hallo hello hallo hello
+''hello':'hello 'hallo':'hallo hello hallo' hello''
+hello hallo hello hallo hello
 """

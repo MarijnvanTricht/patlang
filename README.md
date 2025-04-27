@@ -133,8 +133,7 @@ cpp_class["V_PublicFunctions"] = """// A simple member function
 void greet() {
     cout << "Hello from V_ClassName!" << endl;
 }"""
-
-
+cpp_class["V_ClassName"] = cpp_class["V_ClassName"] # to update V_className
 print(cpp_class)
 ```
 
@@ -171,8 +170,8 @@ print(a)
 Will return
 
 ```
-''hello':'hello 'hallo':'hallo hello hallo' hello''
-hello hallo hello hallo hello
+''hello':''hallo':'hello hallo' hello''
+hello hallo hello
 ```
 
 These values can also be replace before outputting to `str` with the flush function.
@@ -187,8 +186,8 @@ print(a)
 Will return
 
 ```
-''hello':'hello 'hallo':'hallo hello hallo hello hallo' hello 'hallo':'hallo hello hallo hello hallo' hello''
-hello hallo hello hallo hello hallo hello hallo hello hallo hello hallo hello
+''hello':'hello 'hallo':'hallo hello hallo' hello''
+hello hallo hello hallo hello
 ```
 
 ### List
