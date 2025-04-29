@@ -229,22 +229,22 @@ class List(list):
         """
         return "" + "".join(map(repr, self)) + ""
 
-    def _copy(self, newPattern):
+    def _copy(self, newList):
         """
         private copy, because self_type cannot be given as default argument
         """
         for item in self:
             if hasattr(item, "copy"):
-                newPattern.append(item.copy())
+                newList.append(item.copy())
             else:
-                newPattern.append(item)
-        return newPattern
+                newList.append(item)
+        return newList
 
     def copy(self):
         """
         returns a copy of self as Pattern(self)
         """ 
-        return self._copy(Pattern())
+        return self._copy(List())
 
     def setItem(self, key, value, flattend=True):
         """
