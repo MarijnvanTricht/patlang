@@ -424,19 +424,19 @@ class Tree():
             T = newTree
             for item in path:
                 if isinstance(value, Tree.Variable):
-                    if isinstance(item.value, Tree.Variable):
-                        if value.name != item.value.name:
-                            T = T[item.value._remove(value)]
+                    if isinstance(item, Tree.Variable):
+                        if value != item.name:
+                            T = T[item._remove(value)]
                         else:
                             continue
                         
-                if isinstance(item.value, Tree):
+                if isinstance(item, Tree):
                     if isinstance(value, Tree):
-                        if item.value != value:
-                            T = T[item.value._remove(value)]
+                        if item != value:
+                            T = T[item._remove(value)]
                 else:
-                    if item.value != value:
-                        T = T[item.value]
+                    if item != value:
+                        T = T[item]
         return newTree
 
     def __eq__(self, other):
@@ -444,7 +444,7 @@ class Tree():
             for path in self:
                 for otherpath in other:
                     for item, otheritem in zip(path, otherpath):
-                        if item.value != otheritem.value:
+                        if item != otheritem:
                             return False
             return True
         return False
@@ -513,7 +513,7 @@ class Tree():
                 path.append(node)
 
                 node = node._next_node
-            return path
+            return [i.value for i in path]
         else:
             raise StopIteration
     
@@ -524,8 +524,8 @@ class Tree():
         out = ""
         for path in self:
             for item in path:
-                if item.value != None:
-                    out += str(item.value)
+                if item != None:
+                    out += str(item)
 
         return out
 
@@ -537,10 +537,10 @@ class Tree():
         
         for path in self:
             for item in path:
-                if isinstance(item.value, Tree.Variable):
-                    out += repr(item.value.name) + ":"
-                if item.value != None:
-                    out += repr(item.value)
+                if isinstance(item, Tree.Variable):
+                    out += repr(item.name) + ":"
+                if item != None:
+                    out += repr(item)
         
         return out
 
@@ -551,10 +551,10 @@ class Tree():
         for path in self:
             T = newTree
             for item in path:
-                if isinstance(item.value, Tree):
-                    T = T[item.value.copy()]
+                if isinstance(item, Tree):
+                    T = T[item.copy()]
                 else:
-                    T = T[item.value]
+                    T = T[item]
         return newTree
 
     def copy(self):
@@ -563,25 +563,41 @@ class Tree():
     def setItem(self, key, value, flattend=True):
         """
         set static item
-        """ 
-        for path in self:
-            for item in path:
-                if item.value == key:
-                    item.value = value
-                elif isinstance(item.value, Tree) and flattend:
-                    item.value.setItem(key, value, flattend)
+        """
+        lower_nodes = [self]
+        while len(lower_nodes) > 0:
+            node = lower_nodes.pop()
+            while node != None:
+                if node._lower_node:
+                    lower_nodes.append(node._lower_node)
+
+                if isinstance(node.value, Tree) and flattend:
+                    node.value.setItem(key, value);
+                else:
+                    if node.value == key:
+                        node.value = value
+
+                node = node._next_node
 
     def getItem(self, key, flattend=True):
         """
         get static item
         """
-        for path in self:
-            for item in path:
-                if item.value == key:
-                    return item
-                elif isinstance(item.value, Tree) and flattend:
-                    n = item.value.getItem(key, flattend)
+        lower_nodes = [self]
+        while len(lower_nodes) > 0:
+            node = lower_nodes.pop()
+            while node != None:
+                if node._lower_node:
+                    lower_nodes.append(node._lower_node)
+
+                if isinstance(node.value, Tree) and flattend:
+                    n = node.value.getItem(key);
                     if n: return n;
+                else:
+                    if node.value == key:
+                        return node
+
+                node = node._next_node
 
     def setVariable(self, key, value, flattend=True):
         """
@@ -589,11 +605,11 @@ class Tree():
         """
         for path in self:
             for item in path:
-                if isinstance(item.value, Tree.Variable):
-                    if item.value.name == key:
-                        item.value.value = value
-                if isinstance(item.value, Tree) and flattend:
-                    item.value.setVariable(key, value, flattend)
+                if isinstance(item, Tree.Variable):
+                    if item.name == key:
+                        item.value = value
+                if isinstance(item, Tree) and flattend:
+                    item.setVariable(key, value, flattend)
         
     def getVariable(self, key, flattend=True):
         """
@@ -601,11 +617,11 @@ class Tree():
         """
         for path in self:
             for item in path:
-                if isinstance(item.value, Tree.Variable):
-                    if item.value.name == key:
-                        return item.value.value
-                if isinstance(item.value, Tree) and flattend:
-                    n = item.value.getVariable(key, flattend)
+                if isinstance(item, Tree.Variable):
+                    if item.name == key:
+                        return item.value
+                if isinstance(item, Tree) and flattend:
+                    n = item.getVariable(key, flattend)
                     if n: return n;
 
     def flush(self, key, flattend=True):
@@ -629,4 +645,4 @@ class VariableTree(Tree):
         return self._copy(newVariable)
 
 # propper alias
-Tree.Variable = VariableTree   
+Tree.Variable = VariableTree

@@ -16,4 +16,6 @@ All notable changes to this project will be documented here.
 
 - Fixed `copy` for List.
 
+- Iterator of Tree now returns a list of values
+
 - 
