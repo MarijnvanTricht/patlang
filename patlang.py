@@ -242,7 +242,7 @@ class List(list):
             self.setItem(key, value, flattend)
 
     def __add__(self, other):
-        pat = self._copy(List())
+        pat = self.copy()
         if type(other) is List:
             pat.extend(other)
         else:
@@ -256,19 +256,24 @@ class List(list):
         return self.__add__(other)
 
     def __sub__(self, other):
-        pat = self._copy(List())
-        if type(other) is List:
-            for item in other:
-                pat.remove(item)
-        else:
-            pat.remove(other)
-        return pat
+        return (self.copy()).__isub__(other)
 
     def __isub__(self, other):
         """
         return __sub__
         """
-        return self.__sub__(other)
+        for i in range(len(self)-1, -1, -1):
+            print(list.__getitem__(self,i), i)
+            if list.__getitem__(self,i) == other:
+                del self[i:i+1]
+            elif (isinstance(list.__getitem__(self,i), List.Variable)
+                  and isinstance(other, List.Variable)):
+                if list.__getitem__(self,i).name == other.name:
+                    del self[i:i+1]
+            elif isinstance(list.__getitem__(self,i), List):
+                item = list.__getitem__(self,i)
+                item -= other
+        return self
 
     def __contains__(self, key, flattend=True):
         """
@@ -791,5 +796,3 @@ class VariableTree(Tree):
 
 # propper alias
 Tree.Variable = VariableTree
-
-
