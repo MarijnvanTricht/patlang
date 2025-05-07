@@ -137,6 +137,67 @@ class String(str):
         """  
         return self[key]
 
+    def split(self, separator=" ", maxsplit=-1):
+        """
+        split, but return a patlang List type
+        """
+        pass
+
+    def toList(self, flattend=True, sep="", endline=""):
+        """
+        convert to patlang List
+        """ 
+        S = super().__str__()
+        L = [List(S)]
+
+        dictovaries = dict(self.variables)
+
+        if sep != "": dictovaries.update({sep:""});
+        if endline != "": dictovaries.update({endline:""});
+        
+        for key in dictovaries:
+            Lint = [List()]
+            for l in L:
+                for item in l:
+                    if not isinstance(item, List.Variable):
+                        if key in item:
+                            items = item.split(key)
+                            for idx, item in enumerate(items):
+                                if idx > 0:
+                                    if key in self.variables:
+                                        Lint[-1].append(List.Variable(key, self.variables[key]))
+                                        nk = self.variables[key]
+                                        while nk in self.variables:
+                                            Lint[-1].setVariable(key, List.Variable(nk, self.variables[nk]))
+                                            nk = self.variables[nk]
+                                    elif key == endline:
+                                        Lint.append(List())
+                                if item != '':
+                                    Lint[-1].append(item)
+                        else:
+                            Lint[-1].append(item)
+                    else:
+                        Lint[-1].append(item)
+
+            if len(Lint) > 1:
+                L = []
+                for l in Lint:
+                    L.append(l.copy())
+            else:
+                L = [Lint[-1].copy()]
+
+        if len(L) > 1:
+            return L
+        else:
+            return L[0]
+
+    def toTree(self, flattend=True):
+        """
+        convert to patlang Tree
+        """ 
+        L = self.toList(flattend)
+        return L.toTree(flattend)
+
 #------------------------------------------------------------------------------#
 #                                                                              #
 # List                                                                         #
@@ -227,7 +288,7 @@ class List(list):
         """
         return serialized repr of self
         """
-        return "" + "".join(map(repr, self)) + ""
+        return "[" + ",".join(map(repr, self)) + "]"
 
     def _copy(self, newList):
         """
@@ -328,6 +389,56 @@ class List(list):
         var = getVariable(key, flattend)
         setVariable(var.name, var.value, flattend)
 
+    def toTree(self, flattend=True):
+        """
+        convert to patlang Tree
+        """            
+        Tbase = Tree()
+        T = Tbase
+        for item in self:
+            if isinstance(item, List.Variable):
+                T = T[Tree.Variable(item.name, item.toTree().value)]
+            elif isinstance(item, List) and flattend:
+                nTbase = T 
+                for x in item.toTree():
+                    nT = nTbase
+                    for y in x:
+                        nT = nT[y]
+            else:
+                T = T[item]
+        return Tbase
+
+    def toString(self, flattend=True, sep="", endline=""):
+        """
+        convert to patlang String
+        """
+        def _toString(lst, flattend):
+            S = ""
+            variables = dict()
+            for i, item in enumerate(lst):
+                if isinstance(item, List.Variable):
+                    S += item.name
+                    s, nv = _toString(item, flattend)
+                    variables.update({item.name : s})
+                    variables.update(nv)
+                elif isinstance(item, List) and flattend:
+                    s, nv = _toString(item, flattend)
+                    S += s
+                    if len(lst) != 1:
+                        S += endline
+                    variables.update(nv)
+                else:
+                    S += item
+                    if i != (len(lst)-1):
+                        S += sep
+            return S, variables
+
+        S = String()
+        s, nv = _toString(self, flattend)
+        S += s.strip()
+        S.variables.update(nv)
+        return S
+
 class VariableList(List):
     """
     a Variable is a Pattern with a name
@@ -345,7 +456,7 @@ class VariableList(List):
         """
         return serialized repr of self (including name)
         """
-        return "(" + repr(self.name) + ":" + "".join(map(repr, self)) + ")"
+        return repr(self.name) + ":" + ",".join(map(repr, self))
     
     def copy(self):
         """
@@ -513,7 +624,9 @@ class Tree():
                 path.append(node)
 
                 node = node._next_node
-            return [i.value for i in path]
+            L = List()
+            L.extend([i.value for i in path if i.value != None])
+            return L
         else:
             raise StopIteration
     
@@ -533,16 +646,14 @@ class Tree():
         """
         return serialized repr of self
         """
-        out = ""
-        
+        out = []
         for path in self:
+            l = []
             for item in path:
-                if isinstance(item, Tree.Variable):
-                    out += repr(item.name) + ":"
-                if item != None:
-                    out += repr(item)
+                l.append(repr(item))
+            out.append("{" + ",".join(l) + "}")
         
-        return out
+        return "{" + ",".join(out) + "}"
 
     def _copy(self, newTree):
         """
@@ -630,6 +741,37 @@ class Tree():
         """
         var = getVariable(key, flattend)
         setVariable(var.name, var.value, flattend)
+
+    def toList(self, flattend=True):
+        """
+        convert to patlang List (of patlang List) ..
+        """
+        if isinstance(self, Tree.Variable) and flattend:
+            if isinstance(self.value, Tree.Variable) and flattend:
+                return List.Variable(self.name, self.value.toList())
+            return List.Variable(self.name, self.value)
+            
+        returnlist = List()
+        for path in self:
+            pathlist = List()
+            for item in path:
+                if isinstance(item, Tree) and flattend:
+                    pathlist.append(item.toList(flattend))
+                else:
+                    pathlist.append(item)
+            returnlist.append(pathlist)
+
+        if len(returnlist) > 1:
+            return returnlist
+        else:
+            return list.__getitem__(returnlist, 0)
+
+    def toString(self, flattend=True):
+        """
+        convert to patlang String
+        """ 
+        L = self.toList(flattend)
+        return L.toString(flattend)
     
 class VariableTree(Tree):
     """
@@ -639,6 +781,9 @@ class VariableTree(Tree):
     def __init__(self, name = "", value = Tree(), *args):
         super().__init__(value, *args)
         self.name = name
+
+    def __repr__(self):
+        return repr(self.name) + ":" + repr(self.value)
     
     def copy(self):
         newVariable = Tree.Variable(self.name)
@@ -646,3 +791,5 @@ class VariableTree(Tree):
 
 # propper alias
 Tree.Variable = VariableTree
+
+
